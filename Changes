@@ -1,5 +1,10 @@
 Revision history for Wx::WidgetMaker.
 
+0.11  Wed Aug 04 2004
+      o  fixed tests
+      o  fixed -id bug in popup_menu
+      o  added SIGNATURE
+
 0.10  Mon Nov 10 2003
       o  added -id parameter to widgets so that events
          can be associated with them

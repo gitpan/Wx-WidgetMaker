@@ -13,39 +13,29 @@ to a Perl CGI programmer by using an API similar to CGI.pm.
 (Specifically, it supports what I consider to be a
 useful/relevant subset of CGI.pm's :standard export tags.)
 It tries to adhere as faithfully as reasonable to the CGI
-API where applicable, and otherwise to try to do something
-intuitive.
+API where applicable, and otherwise to do something intuitive.
 
 For more details, read `perldoc Wx::WidgetMaker`.
 
 
 INSTALLATION
 
-To install this module type the following:
+To install this module, type the following:
+
+   perl ./Build.PL
+   ./Build
+   ./Build test
+   ./Build install
+
+or, if you don't have Module::Build,
 
    perl Makefile.PL
    make
    make test
    make install
 
-Currently test.pl only tests whether the module loads,
-then it runs a demo. (You'll have to close the window
-yourself.) You might get a warning on the test:
-
-  Use of uninitialized value in null operation ...
-
-Ignore that for now, please.
 
 DEPENDENCIES
 
 This module requires wxPerl to be installed.
-I've only tried it with wxPerl 0.11 and 0.17, wxGTK on Linux.
-
-
-COPYRIGHT AND LICENCE
-
-Copyright (C) 2002-2003, Scott Lanning <slanning@theworld.com>.
-All rights reserved.
-
-This module is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself.
+I've tried it with wxPerl 0.20, wxGTK 2.4 on Linux.

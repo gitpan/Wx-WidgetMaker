@@ -1,30 +1,26 @@
-# Before `make install' is performed this script should be runnable with
-# `make test'. After `make install' it should work as `perl test.pl'
+#!/usr/bin/perl -w
 
-#########################
+use strict;
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 
-# change 'tests => 1' to 'tests => last_test_to_print';
+use Test::More tests => 1;
 
-use Test;
-BEGIN { plan tests => 1 };
-use Wx::WidgetMaker;
-ok(1); # If we made it this far, we're ok.
 
-#########################
-
-# Insert your test code below, the Test module is use()ed here so read
-# its man page ( perldoc Test ) for help writing this test script.
+my $app = MyApp->new();
+isa_ok($app, 'MyApp');
 
 
 # [XXX: change into tests rather than a demo]
 
-use strict;
-MyApp->new()->MainLoop();
+$app->MainLoop();
 
 package MyApp;
+use strict;
 use base qw(Wx::App);
 use Wx qw(:everything);
-use lib qw(./blib/lib);
+use FindBin;
+use lib "$FindBin::Bin/../lib";
 use Wx::WidgetMaker;
 
 our %labels = (
@@ -92,14 +88,14 @@ sub OnInit {
 
     $control = $q->popup_menu(
         -name => 'color_popup',
-        -values => ['red', 'green', 'blue'],
+        -values => [qw(red green blue)],
         -default => 'green',
         -labels => \%labels,
     );
 
     $control2 = $q->scrolling_list(
         -name => 'color_list',
-        -values => ['red', 'green', 'blue'],
+        -values => [qw(red green blue)],
         -default => 'green',
         -size => 40,           # window height, not number of rows
         -multiple => 1,
@@ -131,7 +127,7 @@ sub OnInit {
 
     $control2 = $q->radio_group(
         -name => 'color_radio_group',
-        -values => ['red', 'green', 'blue'],
+        -values => [qw(red green blue)],
         -default => 'green',
         -linebreak => 'true',
         -labels => \%labels,
@@ -154,7 +150,7 @@ sub OnInit {
 
     $control2 = $q->image_button(
         -name => 'button_name',
-        -src => './save.xpm',
+        -src => '../ex/save.xpm',
     );
     $q->print([$control, $control2], $rowsizer);
     $pagesizer->Add($rowsizer);

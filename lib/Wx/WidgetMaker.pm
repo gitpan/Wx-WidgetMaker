@@ -2,7 +2,7 @@ package Wx::WidgetMaker;
 
 require 5.006;
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 
 use strict;
@@ -203,6 +203,7 @@ sub scrolling_list {
     _require_param(\$name, '-name');
     _require_param_type(\$values, 'ARRAY', '-values');
     _init_param(\$default, $values->[0]);
+    _init_param(\$id, wxDefaultID);
 
     if (defined $height) {
         if ($height =~ /^\d+$/) {
@@ -432,6 +433,7 @@ sub _get_form_data {
     local *isa = \&UNIVERSAL::isa;
     undef $value;
 
+    # XXX: should check if $child->Get* doesn't return a value
     if (isa($child, 'Wx::TextCtrl')) {
         $value = $child->GetValue();
     } elsif (isa($child, 'Wx::Choice')) {
@@ -1244,7 +1246,7 @@ while in scalar context returns the first value found.
 
 =head1 AUTHOR
 
-Copyright 2002-2003, Scott Lanning <slanning@theworld.com>.
+Copyright 2002-2004, Scott Lanning <lannings@who.int>.
 All rights reserved.
 
 This module is free software; you can redistribute it and/or modify

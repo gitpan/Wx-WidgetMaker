@@ -2,7 +2,7 @@ package Wx::WidgetMaker;
 
 require 5.006;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 use strict;
@@ -11,7 +11,6 @@ use Carp qw(carp confess);
 
 use Wx qw(:everything);
 
-use base qw(Wx::Panel);
 use fields qw(_parent);
 
 # Some constants for consistency's sake
@@ -313,14 +312,15 @@ sub radio_group {
 
 sub submit {
     my $self = shift;
-    my ($name, $value) = _rearrange(['NAME', [qw(VALUE LABEL)]], @_);
+    my ($name, $value, $id) = _rearrange(['NAME', [qw(VALUE LABEL)], 'ID'], @_);
     my ($button);
 
     _require_param(\$name, '-name');
     _init_param(\$value, 'Submit');
+    _init_param(\$id, wxDefaultID);
 
     $button = Wx::Button->new(
-        $self->{'_parent'}, wxDefaultID, $value,
+        $self->{'_parent'}, $id, $value,
         wxDefaultPosition, wxDefaultSize, wxDefaultStyle,
         wxDefaultValidator, $name
     );
@@ -363,11 +363,11 @@ sub print {
 
         if (ref($add) eq 'ARRAY') {
             foreach my $control (@$add) {
-                _require_param_type(\$control, 'Wx::Control');
+                _require_param_type(\$control, ['Wx::Control', 'Wx::Sizer']);
                 $sizer->Add($control, $option, $flag, $border);
             }
         } else {
-            _require_param_type(\$add, 'Wx::Control');
+            _require_param_type(\$add, ['Wx::Control', 'Wx::Sizer']);
             $sizer->Add($add, $option, $flag, $border);
         }
 
@@ -509,14 +509,22 @@ sub _require_param {
     confess "$arg argument missing" unless defined $$ptr;
 }
 
-# Require $$ptr to have been given and to be of type $type.
+# Require $$ptr to have been given and to be of type $types.
+# $types can be an arrayref, in which case $$ptr has to
+# be one of the types in the array.
 sub _require_param_type {
-    my ($ptr, $type, $arg) = @_;
+    my ($ptr, $types, $arg) = @_;
     _init_param(\$arg, '');
 
-    unless (defined $$ptr && UNIVERSAL::isa($$ptr, $type)) {
-        confess "$arg argument invalid (not of type '$type')";
+    $types = [$types] unless ref($types) eq 'ARRAY';
+
+    if (defined $$ptr) {
+        foreach my $type (@$types) {
+            return if UNIVERSAL::isa($$ptr, $type);
+        }
     }
+
+    confess "$arg argument invalid (not a '", join(" or '", @$types), "')";
 }
 
 sub _no_op {
@@ -630,27 +638,56 @@ Wx::WidgetMaker - a CGI.pm-like library for wxPerl
 
     use Wx::WidgetMaker;
 
-    $q = Wx::WidgetMaker->new(-parent => $frame);
+    $dialog = Wx::Dialog->new(...);
+    $q = Wx::WidgetMaker->new(-parent => $dialog);
 
-    # `print' a control to a pager
-    $ctrl = $q->h1('H1 text');
+    # The dialog "page"
     $pagesizer = Wx::BoxSizer->new(wxVERTICAL);
-    $q->print($control, $pagesizer);
 
-    # or `print' StaticText
-    $ctrl1 = $q->print('Password: ');
+    # A "row" in the page
+    $rowsizer = Wx::BoxSizer->new(wxHORIZONTAL);
 
-    # or `print' an array ref of controls
+    # "print" a control to a row
+    $ctrl = $q->h1('H1 text');
+    $q->print($ctrl, $rowsizer);
+
+    # Add the row to the page
+    $q->print($rowsizer, $pagesizer);
+
+    # A new row
+    $rowsizer = Wx::BoxSizer->new(wxHORIZONTAL);
+
+    # print a label and textfield in an array
     $ctrl2 = $q->password_field(
         -name => 'password',
         -default => 'blue',
         -size => 50,         # window width, not number of chars
         -maxlength => 30,
     );
-    $rowsizer = Wx::BoxSizer->new(wxHORIZONTAL);
-    $q->print([$ctrl1, $ctrl2], $rowsizer);
+    $q->print([$q->print('Password: '), $ctrl2], $rowsizer);
 
-    $pagesizer->Add($rowsizer);
+    # Add the row to the page
+    $q->print($rowsizer, $pagesizer);
+
+    # Add some buttons
+    $rowsizer = Wx::BoxSizer->new(wxHORIZONTAL);
+
+    $okbutton = $q->submit('ok', 'OK', wxID_OK);
+    $cancelbutton = $q->submit('cancel', 'Cancel', wxID_CANCEL);
+    $q->print([$okbutton, $cancelbutton], $rowsizer);
+
+    $q->print($rowsizer, $pagesizer);
+
+    # Put widgets in the dialog as normal
+    $dialog->SetAutoLayout(1);
+    $dialog->SetSizer($pagesizer);
+    $pagesizer->Fit($dialog);
+
+    # Get dialog data
+    if ($dialog->ShowModal() == wxID_OK) {
+        $password = $q->param('password');
+    }
+    $dialog->Destroy();
 
 
 =head1 DESCRIPTION
@@ -712,7 +749,8 @@ These methods display their string parameter in bold font
 in various sizes, C<h1> using the largest and C<h6> the
 smallest. Note that unlike the HTML tags, there are no
 linebreaks before or after the text, so you have to
-explicitly put them on their own row.
+explicitly put them on their own row (e.g. by adding to
+a wxHORIZONTAL BoxSizer).
 
 I<Parameters>
 
@@ -828,7 +866,7 @@ A name for the popup_menu.
 
 =item * -value, -values
 
-An reference to a array of values for the menu.
+A reference to a array of values for the menu.
 
 =item * -default, -defaults     (first element of -value aref)
 
@@ -858,7 +896,7 @@ A name for the scrolling_list.
 
 =item * -value, -values
 
-An reference to an array of values for the menu.
+A reference to an array of values for the menu.
 
 =item * -default, -defaults
 
@@ -899,7 +937,7 @@ A name for the checkbox_group.
 
 =item * -value, -values
 
-An reference to an array of values for the underlying checkbox values.
+A reference to an array of values for the underlying checkbox values.
 
 =item * -default, -defaults              (no boxes checked)
 
@@ -986,7 +1024,7 @@ A required name for the radio_group.
 
 =item * -value, -values
 
-An reference to an array of values. These values will be
+A reference to an array of values. These values will be
 displayed as the radio button labels. See also -labels.
 
 =item * -default                     (none selected)
@@ -1070,6 +1108,11 @@ In CGI.pm, -value (or -label) gives the button an associated string
 Here, instead, the -value will be the button label. Note that
 you can retrieve the label string with $button->GetLabel().
 
+=item * -id                       (wxDefaultID)
+
+Sets the ID argument for the Wx::Button, for example
+wxID_OK or wxID_CANCEL.
+
 =back
 
 I<Returns>
@@ -1112,7 +1155,7 @@ A Wx::BitmapButton object.
 
 This isn't a CGI.pm method (though it _is_ an Apache.pm method :),
 but is handy for either creating a StaticText object or adding
-control objects to a Sizer.
+Control or Sizer objects to a Sizer.
 
 I<Parameters>
 
@@ -1121,20 +1164,22 @@ I<Parameters>
 =item * -add
 
 This parameter is overloaded depending on context. If the argument
-is a plain string, a StaticText object will be returned. If the
-argument is a Wx::Control object (something returned by one of
-the other Wx::WidgetMaker methods, like TextCtrl, Choice, etc..) or an
-array reference of objects, and the -sizer argument is a Wx::Sizer,
-the control will be added directly to the sizer. See the -sizer
-parameter description for details.
+is a plain string, a StaticText object will be returned (XXX: maybe
+this should be part of textfield, instead). If the
+argument is a Wx::Control (something returned by one of
+the other Wx::WidgetMaker methods, like TextCtrl, Choice, etc..)
+or a Wx::Sizer (BoxSizer, for example) or an array reference of
+these types of objects, and the -sizer argument is a Wx::Sizer,
+the control or sizer will be added directly to the sizer.
+See the -sizer parameter description for details.
 
 =item * -sizer     (undef)
 
-If the -add argument is a Wx::Control object, the object will
-be added to the Wx::Sizer specified by the -sizer argument
-with $sizer->Add($control). If the -add argument is an array
-reference of Wx::Control objects, all of the objects will be
-added sequentially to the $sizer.
+If the -add argument is a Wx::Control or Wx::Sizer object,
+the object will be added to the Wx::Sizer specified by the
+-sizer argument with $sizer->Add($control). If the -add argument
+is an array reference of Wx::Control objects, all of the objects
+will be added sequentially to the $sizer.
 
 =item * -option    (0)
 

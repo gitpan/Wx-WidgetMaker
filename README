@@ -1,5 +1,5 @@
-Wx::WidgetMaker version 0.01
-=============================
+Wx::WidgetMaker
+===============
 
 When starting to learn wxPerl, it can be frustrating
 trying to figure out which widgets handle what functionality.
@@ -36,12 +36,12 @@ yourself.)
 DEPENDENCIES
 
 This module requires wxPerl to be installed.
-I've only tried it with wxPerl 0.11, wxGTK on Linux.
+I've only tried it with wxPerl 0.11 and 0.17, wxGTK on Linux.
 
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2002, Scott Lanning <slanning@theworld.com>.
+Copyright (C) 2002-2003, Scott Lanning <slanning@theworld.com>.
 All rights reserved.
 
 This module is free software; you can redistribute it and/or

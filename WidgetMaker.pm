@@ -2,7 +2,7 @@ package Wx::WidgetMaker;
 
 require 5.006;
 
-our $VERSION = '0.02';
+our $VERSION = '0.10';
 
 
 use strict;
@@ -14,16 +14,17 @@ use Wx qw(:everything);
 use fields qw(_parent);
 
 # Some constants for consistency's sake
-use constant wxDefaultID => -1;
-use constant wxDefaultWidth => -1;
+use constant wxDefaultID     => -1;
+use constant wxDefaultWidth  => -1;
 use constant wxDefaultHeight => -1;
-use constant wxDefaultX => -1;
-use constant wxDefaultY => -1;
-use constant wxDefaultStyle => 0;
+use constant wxDefaultX      => -1;
+use constant wxDefaultY      => -1;
+use constant wxDefaultStyle  => 0;
 # Pointsize corresponding to h1, h2, etc.
 use constant POINTSIZE => {
     1 => 20, 2 => 16, 3 => 12, 4 => 10, 5 => 9, 6 => 8,
 };
+# Prefix added to some widget names so that params can avoid them
 use constant MAGICPREFIX => '!!!#!!##!###';
 
 
@@ -68,12 +69,13 @@ sub h6 {
 
 sub textfield {
     my $self = shift;
-    my ($name, $default, $width, $maxlength) =
-        _rearrange(['NAME', [qw(DEFAULT VALUE)], 'SIZE', 'MAXLENGTH'], @_);
+    my ($name, $default, $width, $maxlength, $id) =
+        _rearrange(['NAME', [qw(DEFAULT VALUE)], 'SIZE', 'MAXLENGTH', 'ID'], @_);
     my ($textfield, $size);
 
     _require_param(\$name, '-name');
     _init_param(\$default, '');
+    _init_param(\$id, wxDefaultID);
 
     if (defined $width) {
         if ($width =~ /^\d+$/) {
@@ -87,7 +89,7 @@ sub textfield {
     # XXX: maxlength not implemented yet, need to set a validator
 
     $textfield = Wx::TextCtrl->new(
-        $self->{'_parent'}, wxDefaultID, $default,
+        $self->{'_parent'}, $id, $default,
         wxDefaultPosition, $size,
         wxNO_BORDER, wxDefaultValidator, $name
     );
@@ -98,12 +100,13 @@ sub textfield {
 
 sub password_field {
     my $self = shift;
-    my ($name, $default, $width, $maxlength) =
-        _rearrange(['NAME', [qw(DEFAULT VALUE)], 'SIZE', 'MAXLENGTH'], @_);
+    my ($name, $default, $width, $maxlength, $id) =
+        _rearrange(['NAME', [qw(DEFAULT VALUE)], 'SIZE', 'MAXLENGTH', 'ID'], @_);
     my ($password_field, $size);
 
     _require_param(\$name, '-name');
     _init_param(\$default, '');
+    _init_param(\$id, wxDefaultID);
 
     if (defined $width) {
         if ($width =~ /^\d+$/) {
@@ -117,7 +120,7 @@ sub password_field {
     # XXX: maxlength not implemented yet, need to set a validator
 
     $password_field = Wx::TextCtrl->new(
-        $self->{'_parent'}, wxDefaultID, $default,
+        $self->{'_parent'}, $id, $default,
         wxDefaultPosition, $size,
         wxTE_PASSWORD, wxDefaultValidator, $name
     );
@@ -128,12 +131,13 @@ sub password_field {
 
 sub textarea {
     my $self = shift;
-    my ($name, $default, $rows, $columns) =
-        _rearrange(['NAME',[qw(DEFAULT VALUE)],'ROWS',[qw(COLS COLUMNS)]], @_);
+    my ($name, $default, $rows, $columns, $id) =
+        _rearrange(['NAME',[qw(DEFAULT VALUE)],'ROWS',[qw(COLS COLUMNS)], 'ID'], @_);
     my ($textarea, $size);
 
     _require_param(\$name, '-name');
     _init_param(\$default, '');
+    _init_param(\$id, wxDefaultID);
 
     if (defined $rows && defined $columns) {
         unless ($rows =~ /^\d+$/) {
@@ -149,7 +153,7 @@ sub textarea {
     _init_param(\$size, wxSIZE(100, 50));
 
     $textarea = Wx::TextCtrl->new(
-        $self->{'_parent'}, wxDefaultID, $default,
+        $self->{'_parent'}, $id, $default,
         wxDefaultPosition, $size,
         wxTE_MULTILINE, wxDefaultValidator, $name
     );
@@ -160,9 +164,9 @@ sub textarea {
 
 sub popup_menu {
     my $self = shift;
-    my ($name, $values, $default, $labels) =
+    my ($name, $values, $default, $labels, $id) =
         _rearrange(
-            ['NAME', [qw(VALUES VALUE)], [qw(DEFAULT DEFAULTS)], 'LABELS'],
+            ['NAME', [qw(VALUES VALUE)], [qw(DEFAULT DEFAULTS)], 'LABELS', 'ID'],
             @_
         );
     my ($popup_menu);
@@ -170,9 +174,10 @@ sub popup_menu {
     _require_param(\$name, '-name');
     _require_param_type(\$values, 'ARRAY', '-values');
     _init_param(\$default, $values->[0]);
+    _init_param(\$id, wxDefaultID);
 
     $popup_menu = Wx::Choice->new(
-        $self->{'_parent'}, wxDefaultID, wxDefaultPosition, wxDefaultSize,
+        $self->{'_parent'}, $id, wxDefaultPosition, wxDefaultSize,
         _make_labels($values, $labels),
         wxDefaultStyle, wxDefaultValidator, $name
     );
@@ -187,10 +192,10 @@ sub popup_menu {
 
 sub scrolling_list {
     my $self = shift;
-    my ($name, $values, $default, $height, $multiple, $labels) =
+    my ($name, $values, $default, $height, $multiple, $labels, $id) =
         _rearrange(
             ['NAME', [qw(VALUE VALUES)], [qw(DEFAULT DEFAULTS)],
-             'SIZE', 'MULTIPLE', 'LABELS'],
+             'SIZE', 'MULTIPLE', 'LABELS', 'ID'],
             @_
         );
     my ($scrolling_list, @labels, $style, $size);
@@ -215,7 +220,7 @@ sub scrolling_list {
     }
 
     $scrolling_list = Wx::ListBox->new(
-        $self->{'_parent'}, wxDefaultID, wxDefaultPosition, $size,
+        $self->{'_parent'}, $id, wxDefaultPosition, $size,
         _make_labels($values, $labels),
         wxCB_READONLY|$style, wxDefaultValidator, $name
     );
@@ -246,16 +251,17 @@ sub checkbox_group {
 
 sub checkbox {
     my $self = shift;
-    my ($name, $checked, $value, $label) =
-        _rearrange(['NAME', [qw(CHECKED SELECTED ON)], 'VALUE', 'LABEL'], @_);
+    my ($name, $checked, $value, $label, $id) =
+        _rearrange(['NAME', [qw(CHECKED SELECTED ON)], 'VALUE', 'LABEL', 'ID'], @_);
     my ($checkbox);
 
     _require_param(\$name, '-name');
     _init_param(\$checked, 0);
     _init_param(\$label, $name);
+    _init_param(\$id, wxDefaultID);
 
     $checkbox = Wx::CheckBox->new(
-        $self->{'_parent'}, wxDefaultID, $label,
+        $self->{'_parent'}, $id, $label,
         wxDefaultPosition, wxDefaultSize,
         wxDefaultStyle, wxDefaultValidator, $name
     );
@@ -268,11 +274,11 @@ sub radio_group {
     my $self = shift;
     my ($name, $values, $default, $linebreak, $labels,
         $rows, $columns, $rowheaders, $colheaders, $nolabels,
-        $caption) =
+        $caption, $id) =
             _rearrange(
                 ['NAME', [qw(VALUES VALUE)], 'DEFAULT', 'LINEBREAK',
                  'LABELS', 'ROWS', [qw(COLUMNS COLS)],
-                 'ROWHEADERS', 'COLHEADERS', 'NOLABELS', 'CAPTION'],
+                 'ROWHEADERS', 'COLHEADERS', 'NOLABELS', 'CAPTION', 'ID'],
                 @_
             );
     my ($radio_group, $style, @labels, $major_dimension);
@@ -280,6 +286,7 @@ sub radio_group {
     _require_param(\$name, '-name');
     _require_param_type(\$values, 'ARRAY', '-values');
     _init_param(\$default, $values->[0]);
+    _init_param(\$id, wxDefaultID);
 
     if (defined $nolabels && $nolabels) {
         @labels = map {''} @labels;
@@ -300,7 +307,7 @@ sub radio_group {
     }
 
     $radio_group = Wx::RadioBox->new(
-        $self->{'_parent'}, wxDefaultID, $caption,
+        $self->{'_parent'}, $id, $caption,
         wxDefaultPosition, wxDefaultSize,
         \@labels, $major_dimension,
         $style, wxDefaultValidator, $name
@@ -331,15 +338,16 @@ sub submit {
 
 sub image_button {
     my $self = shift;
-    my ($name, $src) = _rearrange([qw(NAME SRC)], @_);
+    my ($name, $src, $id) = _rearrange([qw(NAME SRC ID)], @_);
     my ($button, $bitmap);
 
     _require_param(\$name, '-name');
     _require_param(\$src, '-src');
+    _init_param(\$id, wxDefaultID);
 
     $bitmap = _bitmap($src);
     $button = Wx::BitmapButton->new(
-        $self->{'_parent'}, wxDefaultID, $bitmap,
+        $self->{'_parent'}, $id, $bitmap,
         wxDefaultPosition, wxDefaultSize, wxDefaultStyle,
         wxDefaultValidator, $name
     );
@@ -590,29 +598,27 @@ sub _rearrange {
 # Make a Bitmap from a filename
 sub _bitmap {
     my $filename = shift;
-    my ($type, $suffix);
+    my ($type);
 
     carp "bitmap file not found" unless -r $filename;
 
-    $suffix = substr($filename, -4, 4);
-
-    if ($suffix eq '.bmp') {
+    if ($filename =~ /\.bmp$/i) {
         $type = wxBITMAP_TYPE_BMP;
-    } elsif ($suffix eq '.gif') {
+    } elsif ($filename =~ /\.gif$/i) {
         $type = wxBITMAP_TYPE_GIF;
-    } elsif ($suffix eq '.xbm') {
+    } elsif ($filename =~ /\.xbm$/i) {
         $type = wxBITMAP_TYPE_XBM;
-    } elsif ($suffix eq '.xpm') {
+    } elsif ($filename =~ /\.xpm$/i) {
         $type = wxBITMAP_TYPE_XPM;
-    } elsif ($suffix eq '.jpg' || $suffix eq 'jpeg') {
+    } elsif ($filename =~ /\.jpg$/i || $filename =~ /\.jpeg$/i) {
         $type = wxBITMAP_TYPE_JPEG;
-    } elsif ($suffix eq '.png') {
+    } elsif ($filename =~ /\.png$/i) {
         $type = wxBITMAP_TYPE_PNG;
-    } elsif ($suffix eq '.pcx') {
+    } elsif ($filename =~ /\.pcx$/i) {
         $type = wxBITMAP_TYPE_PCX;
-    } elsif ($suffix eq '.pnm') {
+    } elsif ($filename =~ /\.pnm$/i) {
         $type = wxBITMAP_TYPE_PNM;
-    } elsif ($suffix eq '.tif' || $suffix eq 'tiff') {
+    } elsif ($filename =~ /\.tif$/i || $filename =~ /\.tiff$/i) {
         $type = wxBITMAP_TYPE_TIF;
     } else {
         undef $type;   # well, we tried
@@ -632,7 +638,6 @@ __END__
 =head1 NAME
 
 Wx::WidgetMaker - a CGI.pm-like library for wxPerl
-
 
 =head1 SYNOPSIS
 
@@ -689,7 +694,6 @@ Wx::WidgetMaker - a CGI.pm-like library for wxPerl
     }
     $dialog->Destroy();
 
-
 =head1 DESCRIPTION
 
 When starting to learn wxPerl, it can be frustrating
@@ -713,7 +717,6 @@ The values the user has entered/selected on the form are accessible
 through $q->param('somename') where 'somename' was given as a
 -name argument.
 
-
 =head1 METHODS
 
 Here is a reference for the API. Generally methods either
@@ -721,7 +724,6 @@ take named parameters (-name => 'first') or unnamed parameters
 passed in the order listed. Optional parameters have
 their default value listed to the right in parentheses;
 otherwise, the parameter is required.
-
 
 =head2 new
 
@@ -740,7 +742,6 @@ The parent window (must be a Wx::Window).
 I<Returns>
 
 A new Wx::WidgetMaker object.
-
 
 =head2 h1, h2, h3, h4, h5, h6
 
@@ -763,7 +764,6 @@ I<Parameters>
 I<Returns>
 
 A Wx::StaticText object.
-
 
 =head2 textfield
 
@@ -788,12 +788,15 @@ The size (width) of the textfield.
 The maximum number of characters that the user
 can put in the textfield. This is currently unimplemented.
 
+=item * -id                  (wxDefaultID)
+
+Sets the ID argument for the Wx::TextCtrl.
+
 =back
 
 I<Returns>
 
 A Wx::TextCtrl object.
-
 
 =head2 password_field
 
@@ -803,27 +806,30 @@ I<Parameters>
 
 =item * -name
 
-A name for the textfield.
+A name for the password field.
 
 =item * -default, -value     ('')
 
-Default text for the textfield.
+Default text for the password field.
 
 =item * -size                (-1)
 
-The size (width) of the textfield.
+The size (width) of the password field.
 
 =item * -maxlength           (unimplemented)
 
 The maximum number of characters that the user
-can put in the textfield.
+can put in the password field.
+
+=item * -id                  (wxDefaultID)
+
+Sets the ID argument for the Wx::TextCtrl.
 
 =back
 
 I<Returns>
 
 A Wx::TextCtrl object.
-
 
 =head2 textarea
 
@@ -847,12 +853,15 @@ Height in pixels (XXX: would prefer it to be number of rows of text).
 
 Width in pixels (XXX: would prefer it to be the width in chars).
 
+=item * -id                  (wxDefaultID)
+
+Sets the ID argument for the Wx::TextCtrl.
+
 =back
 
 I<Returns>
 
 A Wx::TextCtrl object.
-
 
 =head2 popup_menu
 
@@ -877,12 +886,15 @@ The menu value initially selected.
 A hash reference associating each value in -values
 with a text label.
 
+=item * -id                     (wxDefaultID)
+
+Sets the ID argument for the Wx::Choice.
+
 =back
 
 I<Returns>
 
 A Wx::Choice object.
-
 
 =head2 scrolling_list
 
@@ -898,9 +910,9 @@ A name for the scrolling_list.
 
 A reference to an array of values for the menu.
 
-=item * -default, -defaults
+=item * -default, -defaults            (first element of -value aref)
 
-The menu value initially selected.     (first element of -value aref)
+The menu value initially selected.
 
 =item * -size                          (50)
 
@@ -916,12 +928,15 @@ True if the user can select multiple menu items.
 A hash reference associating each value in -values
 with a text label.
 
+=item * -id                            (wxDefaultID)
+
+Sets the ID argument for the Wx::ListBox.
+
 =back
 
 I<Returns>
 
 A Wx::ListBox object.
-
 
 =head2 checkbox_group
 
@@ -978,7 +993,6 @@ to display '' for all labels).
 
 =back
 
-
 =head2 checkbox
 
 I<Parameters>
@@ -989,7 +1003,7 @@ I<Parameters>
 
 A required name for the checkbox.
 
-=item * -checked, -selected, -on              (false => not checked)
+=item * -checked, -selected, -on         (false => not checked)
 
 Set any of these optional parameters to a true value in order
 for the checkbox to be checked initially.
@@ -1001,16 +1015,19 @@ it to set a value associated with the checkbox being 'on',
 but in wxPerl that value is TRUE if the checkbox
 is checked and FALSE if it is not checked.
 
-=item * -label                                (-name argument)
+=item * -label                           (-name argument)
 
 An optional label displayed to the user.
+
+=item * -id                              (wxDefaultID)
+
+Sets the ID argument for the Wx::CheckBox.
 
 =back
 
 I<Returns>
 
 A Wx::CheckBox object.
-
 
 =head2 radio_group
 
@@ -1076,12 +1093,15 @@ individual RadioBoxes and give the option to not surround
 the radio_group with a StaticBox; this would also allow
 implementing -rowheaders and -colheaders.
 
+=item * -id                          (wxDefaultID)
+
+Sets the ID argument for the Wx::RadioBox.
+
 =back
 
 I<Returns>
 
 A Wx::RadioBox object.
-
 
 =head2 submit
 
@@ -1119,7 +1139,6 @@ I<Returns>
 
 A Wx::Button object.
 
-
 =head2 image_button
 
 I<Parameters>
@@ -1144,12 +1163,15 @@ Otherwise, it will probably segfault.
 
 This parameter is not implemented.
 
+=item * -id                  (wxDefaultID)
+
+Sets the ID argument for the Wx::BitmapButton.
+
 =back
 
 I<Returns>
 
 A Wx::BitmapButton object.
-
 
 =head2 print
 
@@ -1200,7 +1222,6 @@ I<Returns>
 Either a Wx::StaticText object if -text is a string,
 or some Wx::Control subclass if -sizer is given.
 
-
 =head2 param
 
 I<Parameters>
@@ -1221,15 +1242,13 @@ if they were created with this module). If a name is passed,
 in list context returns a list of the selected values,
 while in scalar context returns the first value found.
 
-
 =head1 AUTHOR
 
-Copyright 2002, Scott Lanning <slanning@theworld.com>.
+Copyright 2002-2003, Scott Lanning <slanning@theworld.com>.
 All rights reserved.
 
 This module is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
-
 
 =head1 SEE ALSO
 
@@ -1238,4 +1257,3 @@ The L<Wx|Wx> and L<CGI|CGI> PODs.
 The wxPerl mailing list.
 
 =cut
-

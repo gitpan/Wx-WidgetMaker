@@ -30,8 +30,11 @@ To install this module type the following:
 
 Currently test.pl only tests whether the module loads,
 then it runs a demo. (You'll have to close the window
-yourself.)
+yourself.) You might get a warning on the test:
 
+  Use of uninitialized value in null operation ...
+
+Ignore that for now, please.
 
 DEPENDENCIES
 

@@ -1,15 +1,34 @@
-use 5.006;
+# This file provides backward compatibility with ExtUtils::MakeMaker
 
-use ExtUtils::MakeMaker;
-# See lib/ExtUtils/MakeMaker.pm for details of how to influence
-# the contents of the Makefile that is written.
-WriteMakefile(
-    'NAME'		=> 'Wx::WidgetMaker',
-    'VERSION_FROM'	=> 'WidgetMaker.pm', # finds $VERSION
-    'PREREQ_PM'		=> {
-        'Wx' => 0,
-    },
-    ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
-      (ABSTRACT_FROM => 'WidgetMaker.pm', # retrieve abstract from module
-       AUTHOR     => 'Scott Lanning <slanning@theworld.com>') : ()),
-);
+use 5.006;
+use strict;
+use warnings;
+
+# Copied from Module::Build::Compat POD
+unless (eval "use Module::Build::Compat 0.02; 1" ) {
+    print "This module requires Module::Build to install itself.\n";
+
+    require ExtUtils::MakeMaker;
+    my $yn = ExtUtils::MakeMaker::prompt
+      ('  Install Module::Build from CPAN?', 'y');
+
+    if ($yn =~ /^y/i) {
+        require Cwd;
+        require File::Spec;
+        require CPAN;
+
+        # Save this 'cause CPAN will chdir all over the place.
+        my $cwd = Cwd::cwd();
+        my $makefile = File::Spec->rel2abs($0);
+
+        CPAN::Shell->install('Module::Build::Compat');
+
+        chdir $cwd or die "Cannot chdir() back to $cwd: $!";
+        exec $^X, $makefile, @ARGV; # Redo now that we have Module::Build
+    } else {
+        warn " *** Cannot install without Module::Build.  Exiting ...\n";
+        exit 1;
+    }
+}
+Module::Build::Compat->run_build_pl(args => \@ARGV);
+Module::Build::Compat->write_makefile();

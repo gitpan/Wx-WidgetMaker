@@ -1,7 +1,9 @@
-WidgetMaker.pm
+Build.PL
 Changes
-Makefile.PL
 MANIFEST
+META.yml
+Makefile.PL
 README
-test.pl
+WidgetMaker.pm
 save.xpm
+test.pl
